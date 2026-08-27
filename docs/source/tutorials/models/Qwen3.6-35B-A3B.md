@@ -201,7 +201,9 @@ Single-node deployment runs both Prefill and Decode on the same node. `Qwen3.6-3
       --gpu-memory-utilization 0.90 \
       --enable-prefix-caching \
       --compilation-config '{"cudagraph_mode":"FULL_DECODE_ONLY"}' \
-      --additional-config '{"enable_cpu_binding":true, "multistream_overlap_shared_expert": true}'
+      --additional-config '{"enable_cpu_binding":true, "multistream_overlap_shared_expert": true}' \
+      --enable-auto-tool-choice \
+      --tool-call-parser hermes
     ```
 
     **Key parameters:**
@@ -234,7 +236,9 @@ Single-node deployment runs both Prefill and Decode on the same node. `Qwen3.6-3
       --compilation-config '{"cudagraph_mode": "FULL_DECODE_ONLY", "cudagraph_capture_sizes": [1,8]}' \
       --quantization ascend \
       --max-model-len 20480 \
-      --no-enable-prefix-caching
+      --no-enable-prefix-caching \
+      --enable-auto-tool-choice \
+      --tool-call-parser hermes
     ```
 
     **Key parameters:**
@@ -250,6 +254,29 @@ Single-node deployment runs both Prefill and Decode on the same node. `Qwen3.6-3
     - To enable MTP speculative decoding, use --speculative_config '{"method": "mtp", "num_speculative_tokens": 1}'. We recommend setting num_speculative_tokens to 1. If your usage scenario involves fewer than two concurrent requests, it is recommended to enable MTP. Otherwise, it is recommended not to enable MTP.
 
 Common Issues Tip: If the service fails to start, HBM is insufficient, or requests are not scheduled as expected, refer to [FAQs](../../faqs.md) first, and then check the model-specific FAQ in Section 10.
+
+### 5.2 Function Calling Support
+
+Qwen3.6-35B-A3B supports function calling using the Hermes-style tool use format. To enable this feature, add the following parameters to your deployment command:
+
+```shell
+--enable-auto-tool-choice \
+--tool-call-parser hermes
+```
+
+For models with thinking/reasoning capabilities, you can also add the reasoning parser:
+
+```shell
+--reasoning-parser deepseek_r1
+```
+
+**Key parameters:**
+
+- `--enable-auto-tool-choice`: Enables the model to automatically decide when to use tools.
+- `--tool-call-parser hermes`: Specifies the Hermes parser for tool call extraction. Qwen3.6 uses the Hermes-style tool calling format.
+- `--reasoning-parser deepseek_r1`: (Optional) Enables reasoning/thinking mode support.
+
+For detailed usage and examples, refer to the [vLLM Tool Calling Documentation](https://docs.vllm.ai/en/latest/features/tool_calling.html) and the [Qwen Function Calling Guide](https://qwen.readthedocs.io/en/latest/framework/function_call.html).
 
 ## 6 Functional Verification
 
