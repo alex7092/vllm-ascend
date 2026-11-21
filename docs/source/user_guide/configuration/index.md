@@ -2,9 +2,5 @@
 
 This section provides a detailed configuration guide of vLLM Ascend.
 
-:::{toctree}
-:caption: Configuration Guide
-:maxdepth: 1
-env_vars
-additional_config
-:::
+See [NPU Device Selection](device_selection.md) for `--device-ids`, its
+interaction with `ASCEND_RT_VISIBLE_DEVICES`, and DP, PD, and Ray examples.

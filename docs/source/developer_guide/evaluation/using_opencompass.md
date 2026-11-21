@@ -6,12 +6,11 @@ This document guides you to conduct accuracy testing using [OpenCompass](https:/
 
 You can run a docker container to start the vLLM server on a single NPU:
 
-```{code-block} bash
-   :substitutions:
+```bash
 # Update DEVICE according to your device (/dev/davinci[0-7])
 export DEVICE=/dev/davinci7
 # Update the vllm-ascend image
-export IMAGE=quay.io/ascend/vllm-ascend:|vllm_ascend_version|
+export IMAGE=quay.io/ascend/vllm-ascend:{{ vllm_ascend_version }}
 docker run --rm \
 --name vllm-ascend \
 --shm-size=1g \
@@ -29,7 +28,7 @@ docker run --rm \
 -e VLLM_USE_MODELSCOPE=True \
 -e PYTORCH_NPU_ALLOC_CONF=max_split_size_mb:256 \
 -it $IMAGE \
-vllm serve Qwen/Qwen2.5-7B-Instruct --max_model_len 26240
+vllm serve Qwen/Qwen2.5-7B-Instruct --max-model-len 26240
 ```
 
 The vLLM server is started successfully, if you see information as below:

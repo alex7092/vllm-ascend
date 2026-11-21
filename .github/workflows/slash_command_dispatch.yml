@@ -23,7 +23,7 @@ on:
 
 jobs:
   slashCommandDispatch:
-    if: github.event.issue.pull_request != null && github.event.comment.user.type == 'User'
+    if: (github.event.issue.pull_request != null || startsWith(github.event.comment.body, '/wait-feedback')) && github.event.comment.user.type == 'User'
     runs-on: linux-amd64-cpu-2-hk
     steps:
       - name: Slash Command Dispatch
@@ -34,8 +34,14 @@ jobs:
           commands: |
             e2e
             rerun
+            run
+            cancel
             nightly
+            presmoke
             cherry-pick
+            revert
+            weekly
+            wait-feedback
           permission: none
           issue-type: both
           dispatch-type: repository
@@ -52,7 +58,22 @@ jobs:
                 "issue_type": "pull-request"
               },
               {
+                "command": "run",
+                "permission": "none",
+                "issue_type": "pull-request"
+              },
+              {
+                "command": "cancel",
+                "permission": "none",
+                "issue_type": "pull-request"
+              },
+              {
                 "command": "nightly",
+                "permission": "none",
+                "issue_type": "pull-request"
+              },
+              {
+                "command": "presmoke",
                 "permission": "none",
                 "issue_type": "pull-request"
               },
@@ -60,5 +81,20 @@ jobs:
                 "command": "cherry-pick",
                 "permission": "none",
                 "issue_type": "pull-request"
+              },
+              {
+                "command": "revert",
+                "permission": "none",
+                "issue_type": "pull-request"
+              },
+              {
+                "command": "weekly",
+                "permission": "none",
+                "issue_type": "pull-request"
+              },
+              {
+                "command": "wait-feedback",
+                "permission": "none",
+                "issue_type": "issue"
               }
             ]

@@ -4,8 +4,12 @@ import numpy as np
 import pytest
 import torch
 
+from vllm_ascend.device.device_config import get_ascend_device_type
+from vllm_ascend.device.device_op import DeviceOperator
+from vllm_ascend.device.hardware import AscendDeviceType
+
 MAX_POSITION_EMBEDDINGS = [262144]
-NUM_TOKENS = [1, 16, 1024]
+NUM_TOKENS = [1, 16, 1024, 10240]
 NUM_QKV_HEADS = [(12, 1), (64, 4)]
 HEAD_SIZES = [128]
 ROPE_DIMS = [64, 128]
@@ -60,6 +64,10 @@ def rms_norm(
     return out
 
 
+@pytest.mark.skipif(
+    get_ascend_device_type() not in (AscendDeviceType.A2, AscendDeviceType.A3, AscendDeviceType.A5),
+    reason="Requires Ascend A2/A3/A5",
+)
 @pytest.mark.parametrize("max_position_embeddings", MAX_POSITION_EMBEDDINGS)
 @pytest.mark.parametrize("num_tokens", NUM_TOKENS)
 @pytest.mark.parametrize("num_q_heads, num_kv_heads", NUM_QKV_HEADS)
@@ -84,7 +92,7 @@ def test_split_qkv_rmsnorm_rope(
     cos_sin_cache = torch.from_numpy(np.random.uniform(0, 1, [max_position_embeddings, rope_dim])).to(dtype).npu()
     positions = torch.randint(low=0, high=max_position_embeddings, size=(num_tokens,), dtype=torch.int64, device=device)
     # fused kernel
-    q, k, v = torch.ops.vllm.qkv_rmsnorm_rope(
+    q, k, v = DeviceOperator.split_qkv_rmsnorm_rope(
         input=qkv,
         q_weight=q_weight,
         k_weight=k_weight,
@@ -92,6 +100,8 @@ def test_split_qkv_rmsnorm_rope(
         kv_hidden_size=kv_hidden_size,
         head_dim=head_size,
         eps=eps,
+        q_bias=None,
+        k_bias=None,
         cos_sin_cache=cos_sin_cache,
         positions=positions,
     )
@@ -127,6 +137,10 @@ def test_split_qkv_rmsnorm_rope(
     torch.npu.reset_peak_memory_stats()
 
 
+@pytest.mark.skipif(
+    get_ascend_device_type() not in (AscendDeviceType.A2, AscendDeviceType.A3, AscendDeviceType.A5),
+    reason="Requires Ascend A2/A3/A5",
+)
 @pytest.mark.parametrize("max_position_embeddings", MAX_POSITION_EMBEDDINGS)
 @pytest.mark.parametrize("num_tokens", NUM_TOKENS)
 @pytest.mark.parametrize("num_q_heads, num_kv_heads", NUM_QKV_HEADS)
@@ -153,7 +167,7 @@ def test_split_qkv_rmsnorm_rope_with_bias(
     cos_sin_cache = torch.from_numpy(np.random.uniform(0, 1, [max_position_embeddings, rope_dim])).to(dtype).npu()
     positions = torch.randint(low=0, high=max_position_embeddings, size=(num_tokens,), dtype=torch.int64, device=device)
     # fused kernel
-    q, k, v = torch.ops.vllm.qkv_rmsnorm_rope(
+    q, k, v = DeviceOperator.split_qkv_rmsnorm_rope(
         input=qkv,
         q_weight=q_weight,
         k_weight=k_weight,

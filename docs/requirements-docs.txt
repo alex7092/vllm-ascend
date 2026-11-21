@@ -1,12 +1,9 @@
-sphinx
-sphinx-argparse
-sphinx-book-theme
-sphinx-copybutton
-sphinx-design
-sphinx-togglebutton
-myst-parser
-msgspec
-sphinx-substitution-extensions
-sphinx-intl
-openai
+# Website build dependencies. Keep translation-service dependencies separate.
+babel
+jinja2
+mkdocs>=1.6
+mkdocs-material
+mkdocs-macros-plugin
+polib
+pymdown-multimd-table
 regex

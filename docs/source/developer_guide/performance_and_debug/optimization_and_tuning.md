@@ -4,14 +4,13 @@ This guide aims to help users improve vLLM Ascend performance at the system leve
 
 ## Preparation
 
-Run the container:
+### 1.Run the container
 
-```{code-block} bash
-   :substitutions:
+```bash
 # Update DEVICE according to your device (/dev/davinci[0-7])
 export DEVICE=/dev/davinci0
 # Update the cann base image
-export IMAGE=m.daocloud.io/quay.io/ascend/cann:|cann_image_tag|
+export IMAGE=m.daocloud.io/quay.io/ascend/cann:{{ cann_image_tag }}
 docker run --rm \
 --name performance-test \
 --shm-size=1g \
@@ -28,10 +27,9 @@ docker run --rm \
 -it $IMAGE bash
 ```
 
-Configure your environment:
+### 2.Configure your environment
 
-```{code-block} bash
-   :substitutions:
+```bash
 # Configure the mirror
 echo "deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ jammy main restricted universe multiverse" > /etc/apt/sources.list && \
 echo "deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ jammy main restricted universe multiverse" >> /etc/apt/sources.list && \
@@ -46,10 +44,9 @@ echo "deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ jammy-security 
 apt update && apt install wget gcc g++ libnuma-dev git vim -y
 ```
 
-Install vLLM and vLLM Ascend:
+### 3.Install vLLM and vLLM Ascend
 
-```{code-block} bash
-   :substitutions:
+```bash
 # Install necessary dependencies
 pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 pip install modelscope pandas datasets gevent sacrebleu rouge_score pybind11 pytest
@@ -60,34 +57,19 @@ export VLLM_USE_MODELSCOPE=True
 
 Please follow the [Installation Guide](https://docs.vllm.ai/projects/ascend/en/latest/installation.html) to make sure vLLM and vLLM Ascend are installed correctly.
 
-:::{note}
-Make sure your vLLM and vLLM Ascend are installed after your Python configuration is completed, because these packages will build binary files using python in current environment. If you install vLLM and vLLM Ascend before completing section 1.1, the binary files will not use the optimized python.
-:::
+!!! note
+
+    Make sure your vLLM and vLLM Ascend are installed after your Python configuration is completed, because these packages will build binary files using python in current environment. If you install vLLM and vLLM Ascend before completing [Configure your environment](#2configure-your-environment), the binary files will not use the optimized python.
 
 ## Optimizations
 
 ### 1. Memory Allocator Optimization
 
-#### 1.1. jemalloc
+#### 1.1. TCMalloc
 
-**jemalloc** is a memory allocator that improves performance for multi-threaded scenarios and can reduce memory fragmentation. jemalloc uses a local thread memory manager to allocate variables, which can avoid lock competition between threads and can hugely optimize performance.
+**TCMalloc (Thread Caching Malloc)** is a universal memory allocator that improves overall performance while ensuring low latency by introducing a multi-level cache structure, reducing lock contention and optimizing large object processing flow. Find more [details](https://www.hiascend.com/document/detail/zh/Pytorch/700/ptmoddevg/trainingmigrguide/performance_tuning_0068.html).
 
-```{code-block} bash
-   :substitutions:
-# Install jemalloc
-sudo apt update
-sudo apt install libjemalloc2
-
-# Configure jemalloc
-export LD_PRELOAD=/usr/lib/"$(uname -i)"-linux-gnu/libjemalloc.so.2:$LD_PRELOAD
-```
-
-#### 1.2. Tcmalloc
-
-**TCMalloc (Thread Caching Malloc)** is a universal memory allocator that improves overall performance while ensuring low latency by introducing a multi-level cache structure, reducing mutex contention and optimizing large object processing flow. Find more [details](https://www.hiascend.com/document/detail/zh/Pytorch/700/ptmoddevg/trainingmigrguide/performance_tuning_0068.html).
-
-```{code-block} bash
-   :substitutions:
+```bash
 # Install tcmalloc
 sudo apt update
 sudo apt install libgoogle-perftools4 libgoogle-perftools-dev
@@ -111,25 +93,26 @@ Some performance tuning features in `torch_npu` are controlled by environment va
 
 Memory optimization:
 
-```{code-block} bash
-   :substitutions:
+```bash
 # Upper limit of memory block splitting allowed (MB): Setting this parameter can prevent large memory blocks from being split.
 export PYTORCH_NPU_ALLOC_CONF="max_split_size_mb:250"
 ```
 
 or
 
-```{code-block} bash
-   :substitutions:
+```bash
 # When operators on the communication stream have dependencies, they all need to be ended before being released for reuse. The logic of multi-stream reuse is to release the memory on the communication stream in advance so that the computing stream can be reused.
 export PYTORCH_NPU_ALLOC_CONF="expandable_segments:True"
 ```
 
 Scheduling optimization:
 
-```{code-block} bash
-   :substitutions:
+```bash
 # Optimize operator delivery queue. This will affect the memory peak value, and may degrade if the memory is tight.
+# Note: TASK_QUEUE_ENABLE=2 cannot be used together with NPU graph capture (ACLGraph). Enabling graph capture
+# with this value makes model startup fail during capture_model with:
+#   RuntimeError: Do not support TASK_QUEUE_ENABLE = 2 during NPU graph capture, please export TASK_QUEUE_ENABLE=1/0.
+# Use TASK_QUEUE_ENABLE=1 (or 0) when NPU graph capture is enabled.
 export TASK_QUEUE_ENABLE=2
 
 # This will greatly improve the CPU bottleneck model and ensure the same performance for the NPU bottleneck model.
@@ -144,8 +127,7 @@ There are some performance tuning features in HCCL, which are controlled by envi
 
 You can configure HCCL to use "AIV" mode to optimize performance by setting the environment variable shown below. In "AIV" mode, the communication is scheduled by AI vector core directly with RoCE, instead of being scheduled by AI CPU.
 
-```{code-block} bash
-   :substitutions:
+```bash
 export HCCL_OP_EXPANSION_MODE="AIV"
 ```
 
@@ -160,13 +142,11 @@ Plus, there are more features for performance optimization in specific scenarios
 
 This section describes operating system–level optimizations applied on the host machine (bare metal or Kubernetes node) to improve performance stability, latency, and throughput for inference workloads.
 
-:::{note}
-These settings must be applied on the host OS and with root privileges. Not inside containers.
-:::
+!!! note
 
-#### 4.1
+    These settings must be applied on the host OS and with root privileges. Not inside containers.
 
-Set CPU Frequency Governor to `performance`
+#### 4.1 Set CPU Frequency Governor to `performance`
 
 ```shell
 echo performance | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor

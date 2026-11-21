@@ -12,9 +12,13 @@
 - [ ] Upgrade vllm version to the new version for CI and Dockerfile
 - [ ] Write the release note PR. ${RELEASE_NOTE_PR_URL}
 
+  - [ ] Aggregate release note fragments and audit commits without fragments (release_notes/fragments)
+
   - [ ] Update the feedback issue link in docs/source/faqs.md
 
   - [ ] Add release note to docs/source/user_guide/release_notes.md
+
+  - [ ] Archive the consumed fragments to release_notes/archive/<version>/ in the release PR
 
   - [ ] Update release version in README.md and README.zh.md (Getting Started and Branch section)
 
@@ -22,7 +26,7 @@
 
   - [ ] Update contributor info in docs/source/community/contributors.md
 
-  - [ ] Update package version in docs/conf.py
+  - [ ] Update package version in mkdocs.yml (extra: block)
 
 
 ### Bug need Solve
